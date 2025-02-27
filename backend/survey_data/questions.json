@@ -1,0 +1,97 @@
+[
+  {
+    "id": "D1",
+    "questionType": "SA",
+    "questionText": "Please specify your monthly household income (Before tax)?",
+    "questionSubtext": "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e04\u0e23\u0e31\u0e27\u0e40\u0e23\u0e37\u0e2d\u0e19\u0e02\u0e2d\u0e07\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e23\u0e31\u0e27\u0e04\u0e38\u0e13 (\u0e01\u0e48\u0e2d\u0e19\u0e2b\u0e31\u0e01\u0e20\u0e32\u0e29\u0e35) \u0e02\u0e2d\u0e07\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e23\u0e31\u0e27\u0e04\u0e38\u0e13\u0e04\u0e48\u0e30?",
+    "options": [
+      {
+        "value": "1",
+        "label": "14,999 \u0e1a\u0e32\u0e17 \u0e2b\u0e23\u0e37\u0e2d\u0e19\u0e49\u0e2d\u0e22\u0e01\u0e27\u0e48\u0e32"
+      },
+      {
+        "value": "2",
+        "label": "15,000-19,999 \u0e1a\u0e32\u0e17"
+      },
+      {
+        "value": "3",
+        "label": "20,000-29,999 \u0e1a\u0e32\u0e17"
+      },
+      {
+        "value": "4",
+        "label": "30,000-39,999 \u0e1a\u0e32\u0e17"
+      },
+      {
+        "value": "5",
+        "label": "40,000-49,999 \u0e1a\u0e32\u0e17"
+      },
+      {
+        "value": "6",
+        "label": "50,000-59,999 \u0e1a\u0e32\u0e17"
+      },
+      {
+        "value": "7",
+        "label": "60,000 \u0e1a\u0e32\u0e17 \u0e2b\u0e23\u0e37\u0e2d\u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32"
+      }
+    ],
+    "isRequired": true
+  },
+  {
+    "id": "D2a",
+    "questionType": "SA",
+    "questionText": "Please specify your marital status?",
+    "questionSubtext": "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e2a\u0e16\u0e32\u0e19\u0e20\u0e32\u0e1e\u0e2a\u0e21\u0e23\u0e2a\u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13\u0e04\u0e48\u0e30?",
+    "options": [
+      {
+        "value": "1",
+        "label": "\u0e42\u0e2a\u0e14 (Single)"
+      },
+      {
+        "value": "2",
+        "label": "\u0e2a\u0e21\u0e23\u0e2a (\u0e21\u0e35\u0e1a\u0e38\u0e15\u0e23) (Married with kids)"
+      },
+      {
+        "value": "3",
+        "label": "\u0e2a\u0e21\u0e23\u0e2a (\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1a\u0e38\u0e15\u0e23) (Married without kids)"
+      },
+      {
+        "value": "4",
+        "label": "\u0e21\u0e48\u0e32\u0e22/ \u0e2b\u0e22\u0e48\u0e32\u0e23\u0e49\u0e32\u0e07 (\u0e21\u0e35\u0e1a\u0e38\u0e15\u0e23) (Divorced/Widow with kids)"
+      },
+      {
+        "value": "5",
+        "label": "\u0e21\u0e48\u0e32\u0e22/ \u0e2b\u0e22\u0e48\u0e32\u0e23\u0e49\u0e32\u0e07 (\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1a\u0e38\u0e15\u0e23) (Divorced/Widow without kids)"
+      }
+    ],
+    "logic": [
+      {
+        "condition": "equals",
+        "value": "2",
+        "jumpToQuestion": "D2b"
+      },
+      {
+        "condition": "equals",
+        "value": "4",
+        "jumpToQuestion": "D2b"
+      }
+    ],
+    "isRequired": true
+  },
+  {
+    "id": "D2b",
+    "questionType": "SA",
+    "questionText": "Do you make any purchase of apparels / clothing for your kid within the past 6 months?",
+    "questionSubtext": "\u0e04\u0e38\u0e13\u0e44\u0e14\u0e49\u0e21\u0e35\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e40\u0e2a\u0e37\u0e49\u0e2d\u0e1c\u0e49\u0e32\u0e43\u0e2b\u0e49\u0e1a\u0e38\u0e15\u0e23\u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13\u0e43\u0e19 6 \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e32\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48\u0e04\u0e30?",
+    "options": [
+      {
+        "value": "1",
+        "label": "\u0e43\u0e0a\u0e48 (Yes)"
+      },
+      {
+        "value": "2",
+        "label": "\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 (No)"
+      }
+    ],
+    "isRequired": true
+  }
+]
