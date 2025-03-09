@@ -1,0 +1,6 @@
+fastapi==0.103.1
+uvicorn==0.23.2
+pydantic==2.3.0
+sqlalchemy==2.0.21
+# Replace psycopg2-binary with pg8000 (pure Python PostgreSQL driver)
+pg8000==1.30.2
