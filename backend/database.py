@@ -5,6 +5,10 @@ import ssl
 import logging
 import traceback
 import time
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -17,11 +21,11 @@ ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
 # Base credentials
-DB_USER = "doadmin"
-DB_PASSWORD = "AVNS_s5qe31ldmhfLbyzLKCY"
-DB_HOST = "db-postgresql-sgp1-19252-do-user-16591899-0.m.db.ondigitalocean.com"
-DB_PORT = "25060"
-DB_NAME = "defaultdb"
+DB_USER = os.getenv("DB_USER", "doadmin")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "defaultdb")
 
 # PostgreSQL connection string with pg8000 driver and SSL context
 DATABASE_URL = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
