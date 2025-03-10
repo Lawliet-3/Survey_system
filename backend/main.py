@@ -15,7 +15,7 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to your frontend domain
+    allow_origins=["https://survey-monke-67.web.app", "http://localhost:3000"],  # In production, restrict this to your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -216,6 +216,28 @@ def admin_get_response(submission_id: str, db: Session = Depends(get_db)):
     
     return crud.format_submission_for_api(submission)
 
+@app.get("/health")
+def direct_health_check():
+    """Direct health check endpoint without API prefix for easier testing"""
+    return {"status": "healthy", "message": "Service is running normally"}
+
+# More comprehensive root endpoint with API info
+@app.get("/")
+def root_endpoint():
+    """Root endpoint with API information"""
+    return {
+        "service": "Survey API",
+        "status": "running",
+        "version": "1.0",
+        "endpoints": {
+            "health": ["/health", "/api/health"],
+            "questions": "/api/questions",
+            "admin": "/api/admin/questions",
+            "docs": "/docs"  # FastAPI auto-generated Swagger docs
+        },
+        "note": "All API endpoints use the /api prefix"
+    }
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)

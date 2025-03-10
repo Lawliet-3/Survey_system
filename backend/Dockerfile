@@ -19,8 +19,11 @@ COPY . .
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
+# Default port for Cloud Run
+ENV PORT=8080
+
 # Expose the port
-EXPOSE 8000
+EXPOSE ${PORT}
 
 # Command to run the application
 CMD ["/app/start.sh"]

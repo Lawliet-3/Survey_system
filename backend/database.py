@@ -1,13 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import ssl
 import logging
 import traceback
 import time
 import os
 from dotenv import load_dotenv
-import certifi
 
 load_dotenv()
 
@@ -15,37 +13,31 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base credentials
+# Database credentials
 DB_USER = os.getenv("DB_USER", "doadmin")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "defaultdb")
 
-# For DigitalOcean managed databases, we should use proper SSL verification
-# PostgreSQL connection string with pg8000 driver and SSL
-DATABASE_URL = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# For DigitalOcean managed PostgreSQL, use the simpler sslmode parameter
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 logger.info(f"Connecting to database at {DB_HOST}:{DB_PORT}/{DB_NAME} as {DB_USER}")
 
-# Function to attempt database connection with retries
 def create_db_engine(max_retries=5, retry_delay=3):
     retries = 0
     last_exception = None
     
     while retries < max_retries:
         try:
-            # Create SQLAlchemy engine with secure SSL configuration
-            # Using the system's CA certificates (certifi) for verification
-            ssl_context = ssl.create_default_context(cafile=certifi.where())
-            
+            # For DigitalOcean, simply using sslmode=require is often more reliable
+            # than custom SSL contexts
             engine = create_engine(
                 DATABASE_URL,
-                connect_args={"ssl_context": ssl_context},
-                pool_pre_ping=True,     # Check connection before using from pool
-                pool_recycle=1800,      # Recycle connections after 30 minutes
-                pool_size=5,            # Set connection pool size
-                max_overflow=10         # Allow up to 10 overflow connections
+                connect_args={"sslmode": "require"},  # Direct sslmode parameter
+                pool_pre_ping=True,
+                pool_recycle=1800
             )
             
             # Test the connection
@@ -63,13 +55,11 @@ def create_db_engine(max_retries=5, retry_delay=3):
             logger.debug(traceback.format_exc())
             
             if retries < max_retries:
-                # Exponential backoff with jitter
-                sleep_time = retry_delay * (2 ** (retries - 1)) + (time.time() % 1)
-                logger.info(f"Retrying in {sleep_time:.2f} seconds...")
+                sleep_time = retry_delay * (2 ** (retries - 1))
+                logger.info(f"Retrying in {sleep_time} seconds...")
                 time.sleep(sleep_time)
             else:
                 logger.error(f"Failed to connect to database after {max_retries} attempts.")
-                # Re-raise the last exception
                 raise last_exception
 
 try:
@@ -78,10 +68,8 @@ try:
 except Exception as e:
     logger.critical(f"Could not establish database connection: {str(e)}")
     logger.debug(traceback.format_exc())
-    # In a production environment, you may want to exit the application
-    # if database connection fails
-    logger.warning("Application may not function correctly without database connection")
     engine = None
+    logger.warning("Application may not function correctly without database connection")
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
