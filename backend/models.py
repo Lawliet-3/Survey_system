@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, Integer, ForeignKey, DateTime, JSON
+from sqlalchemy import Boolean, Column, String, Integer, ForeignKey, DateTime, JSON, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -26,7 +26,7 @@ class Response(Base):
     id = Column(String, primary_key=True, index=True)
     question_id = Column(String, ForeignKey("questions.id"))
     submission_id = Column(String, ForeignKey("submissions.id"))
-    answer_data = Column(JSON)  # Store answer as JSON
+    answer_data = Column(Text)  # Store answer as Text
     
     # Relationships
     question = relationship("Question", back_populates="responses")

@@ -5,6 +5,9 @@ from sqlalchemy import inspect
 from typing import List, Dict
 import uuid
 import json
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from google_speech_service_improved import setup_improved_speech_routes
 
 import crud, models, schemas
 from database import engine, get_db
@@ -12,14 +15,63 @@ from db_migration import migrate_database
 
 app = FastAPI()
 
+setup_improved_speech_routes(app)
+
+
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://survey-monke-67.web.app", "http://localhost:3000"],  # In production, restrict this to your frontend domain
+    allow_origins=["*"],  # In production, restrict this to your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+try:
+    import google.cloud.speech
+    GOOGLE_SPEECH_AVAILABLE = True
+except ImportError:
+    GOOGLE_SPEECH_AVAILABLE = False
+    print("WARNING: Google Cloud Speech libraries not installed. Speech-to-text features will be limited.")
+
+
+
+
+@app.get("/api/check-routes")
+def check_routes():
+    """Check if all required routes are registered"""
+    routes = [{"path": route.path, "name": route.name} for route in app.routes]
+    return {
+        "registered_routes": routes,
+        "improved_speech_route_found": any("/api/transcribe/google-improved" in route.path for route in app.routes),
+        "test_speech_route_found": any("/api/transcribe/test" in route.path for route in app.routes)
+    }
+
+@app.get("/api/credentials-format")
+async def credentials_format():
+    """Show the correct format for Google credentials"""
+    return {
+        "note": "Google credentials should be set in the GOOGLE_CREDENTIALS_JSON environment variable",
+        "format": "GOOGLE_CREDENTIALS_JSON={\"type\":\"service_account\",\"project_id\":\"your-project\",\"private_key_id\":\"...\",...}",
+        "common_mistakes": [
+            "Including quotes around the JSON in the .env file",
+            "Not using the complete JSON from the service account key file",
+            "Escaping quotes within the JSON incorrectly"
+        ],
+        "tip": "Format the credentials as a single line in the .env file without surrounding quotes"
+    }
+    
+class ThaiJSONResponse(JSONResponse):
+    def render(self, content):
+        # Use ensure_ascii=False to properly handle Thai characters
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
 
 @app.put("/api/admin/questions/order")
 def admin_update_question_order(order_data: schemas.QuestionOrderUpdate, db: Session = Depends(get_db)):
@@ -135,14 +187,15 @@ def get_questions(db: Session = Depends(get_db)):
     """Get all questions for the survey"""
     questions = crud.get_questions(db)
     # Process each question to ensure JSON fields are properly converted
-    return [prepare_question_for_response(q) for q in questions]
+    processed_questions = [prepare_question_for_response(q) for q in questions]
+    return ThaiJSONResponse(content=jsonable_encoder(processed_questions))
 
 @app.post("/api/submit")
 def submit_survey(submission: schemas.SubmissionCreate, db: Session = Depends(get_db)):
     """Submit survey responses"""
     try:
         db_submission = crud.create_submission(db, submission)
-        return {"status": "success", "submission_id": db_submission.id}
+        return ThaiJSONResponse(content={"status": "success", "submission_id": db_submission.id})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -152,7 +205,8 @@ def admin_get_questions(skip: int = 0, limit: int = 100, db: Session = Depends(g
     """Get all questions for admin"""
     questions = crud.get_questions(db, skip=skip, limit=limit)
     # Process each question to ensure JSON fields are properly converted
-    return [prepare_question_for_response(q) for q in questions]
+    processed_questions = [prepare_question_for_response(q) for q in questions]
+    return ThaiJSONResponse(content=jsonable_encoder(processed_questions))
 
 @app.get("/api/admin/questions/{question_id}", response_model=schemas.Question)
 def admin_get_question(question_id: str, db: Session = Depends(get_db)):
@@ -205,7 +259,7 @@ def admin_get_responses(skip: int = 0, limit: int = 100, db: Session = Depends(g
     for submission in submissions:
         response_data.append(crud.format_submission_for_api(submission))
     
-    return response_data
+    return ThaiJSONResponse(content=response_data)
 
 @app.get("/api/admin/responses/{submission_id}")
 def admin_get_response(submission_id: str, db: Session = Depends(get_db)):
@@ -214,7 +268,7 @@ def admin_get_response(submission_id: str, db: Session = Depends(get_db)):
     if not submission:
         raise HTTPException(status_code=404, detail="Response not found")
     
-    return crud.format_submission_for_api(submission)
+    return ThaiJSONResponse(content=crud.format_submission_for_api(submission))
 
 @app.get("/health")
 def direct_health_check():
