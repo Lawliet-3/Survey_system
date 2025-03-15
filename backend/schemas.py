@@ -117,3 +117,41 @@ class Submission(BaseModel):
     
     class Config:
         from_attributes = True  # Updated from orm_mode = True
+
+# User authentication schemas
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    customer_id: Optional[str] = None
+
+# Customer data schemas
+class PurchaseBase(BaseModel):
+    brand: str
+    product_type: str
+    product_name: Optional[str] = None
+    purchase_date: datetime
+    store_location: Optional[str] = None
+
+class LatestPurchase(PurchaseBase):
+    purchase_id: str
+    amount: float
+
+class CustomerSurveyData(BaseModel):
+    customer_id: str
+    first_name: str
+    last_name: str
+    income_range: Optional[str] = None
+    marital_status: Optional[str] = None
+    has_children: Optional[bool] = None
+    province: str
+    latest_purchase: Optional[LatestPurchase] = None
+    
+    class Config:
+        from_attributes = True

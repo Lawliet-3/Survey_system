@@ -13,11 +13,13 @@ import crud, models, schemas
 from database import engine, get_db
 from db_migration import migrate_database
 
+from auth_routes import router as auth_router
+
 app = FastAPI()
 
 setup_improved_speech_routes(app)
 
-
+app.include_router(auth_router)
 
 # Enable CORS
 app.add_middleware(
