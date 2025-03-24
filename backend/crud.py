@@ -51,6 +51,9 @@ def create_question(db: Session, question: schemas.QuestionCreate):
     return db_question
 
 def update_question(db: Session, question_id: str, question: schemas.QuestionUpdate):
+    print(f"Updating question {question_id} with data: {question.dict()}")
+    # Explicitly log to see if maxSelections is present in the update data
+    print(f"maxSelections value: {question.maxSelections}")
     logger.info(f"Updating question: {question_id}")
     try:
         db_question = db.query(models.Question).filter(models.Question.id == question_id).first()

@@ -56,6 +56,25 @@ MIGRATIONS = [
         ]
     },
     # Add more migrations here as needed
+    {
+        "version": "003_add_max_selections",
+        "description": "Add max_selections column to questions table",
+        "sql": [
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'questions' AND column_name = 'max_selections'
+                ) THEN
+                    ALTER TABLE questions 
+                    ADD COLUMN max_selections INTEGER DEFAULT 0;
+                END IF;
+            END $$;
+            """
+        ]
+    }
 ]
 
 def migrate_database(engine):

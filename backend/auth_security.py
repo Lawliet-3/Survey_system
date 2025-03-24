@@ -91,3 +91,14 @@ async def get_current_user(
 # Optional: Dependency for routes that need an authenticated user
 def get_current_active_user(current_user = Depends(get_current_user)):
     return current_user
+
+def require_role(required_role: str):
+    """Dependency to check for specific role"""
+    def role_checker(current_user = Depends(get_current_active_user)):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. {required_role} role required."
+            )
+        return current_user
+    return role_checker

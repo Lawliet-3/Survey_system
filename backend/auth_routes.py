@@ -89,7 +89,7 @@ async def login(
     # Create tokens
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "customer_id": user.customer_id}, 
+        data={"sub": user.username, "customer_id": user.customer_id, "role": user.role}, 
         expires_delta=access_token_expires
     )
     
@@ -105,7 +105,7 @@ async def login(
         value=access_token,
         httponly=True,
         secure=True,  # Set to False for HTTP in development
-        samesite="lax",
+        samesite="none",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     
@@ -114,7 +114,7 @@ async def login(
         value=refresh_token,
         httponly=True,
         secure=True,  # Set to False for HTTP in development
-        samesite="lax",
+        samesite="none",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
     
@@ -157,7 +157,7 @@ async def refresh_token(
         value=access_token,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     
@@ -185,6 +185,6 @@ async def validate_session(current_user = Depends(get_current_active_user)):
 @router.post("/logout")
 async def logout(response: Response):
     """Endpoint to log out user by clearing auth cookies"""
-    response.delete_cookie(key="access_token")
-    response.delete_cookie(key="refresh_token")
+    response.delete_cookie("access_token", samesite="none", secure=True)
+    response.delete_cookie("refresh_token", samesite="none", secure=True)
     return {"message": "Successfully logged out"}
