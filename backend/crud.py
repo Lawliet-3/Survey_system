@@ -118,7 +118,9 @@ def update_question_order(db: Session, question_orders: List[schemas.QuestionOrd
     db.commit()
     return updated_questions
 
-# Submission and Response CRUD operations
+# Since we're handling the conversion on the frontend,
+# we can make the backend part simpler:
+
 def create_submission(db: Session, submission: schemas.SubmissionCreate):
     logger.info("Creating new submission")
     try:
@@ -127,7 +129,6 @@ def create_submission(db: Session, submission: schemas.SubmissionCreate):
         
         # Log the submission data
         logger.info(f"Submission ID: {submission_id}")
-        logger.info(f"Answers: {submission.answers}")
         
         # Create the submission record
         db_submission = models.Submission(
@@ -136,26 +137,52 @@ def create_submission(db: Session, submission: schemas.SubmissionCreate):
         )
         db.add(db_submission)
         db.commit()
-        logger.info(f"Submission record created: {submission_id}")
+        
+        # Helper function to decode JSON strings if needed
+        def decode_if_needed(text):
+            if isinstance(text, str):
+                # Check if it's a JSON-encoded string (starts and ends with quotes)
+                if (text.startswith('"') and text.endswith('"')) or \
+                   (text.startswith("'") and text.endswith("'")) or \
+                   (text.startswith('"""') and text.endswith('"""')):
+                    try:
+                        # Try to decode it
+                        return json.loads(text)
+                    except:
+                        pass
+            return text
         
         # Create individual responses for each question
         for question_id, answer in submission.answers.items():
             response_id = f"res_{uuid.uuid4().hex[:8]}"
             
-            # Convert answer to JSON string if it's not already a string
-            if not isinstance(answer, str):
-                answer_json = json.dumps(answer)
-            else:
-                answer_json = answer
-                
-            logger.info(f"Creating response: {response_id} for question: {question_id}")
-            logger.info(f"Answer data: {answer_json}")
+            # Process the answer based on its type
+            final_answer = ""
             
+            if isinstance(answer, list):
+                # For multiple choice answers
+                # Decode each item if needed and join with commas
+                decoded_items = [decode_if_needed(item) for item in answer]
+                final_answer = ", ".join(str(item) for item in decoded_items)
+            else:
+                # For single choice or open-ended answers
+                # Decode if needed
+                final_answer = decode_if_needed(answer)
+            
+            # Explicitly ensure final_answer is a string
+            if not isinstance(final_answer, str):
+                final_answer = str(final_answer)
+                
+            # Log for debugging
+            logger.info(f"Question {question_id}: Original answer: {answer}")
+            logger.info(f"Question {question_id}: Final answer: {final_answer}")
+            
+            # Create the response record
             db_response = models.Response(
                 id=response_id,
                 question_id=question_id,
                 submission_id=submission_id,
-                answer_data=answer_json
+                answer_data=final_answer
             )
             db.add(db_response)
         
@@ -187,16 +214,26 @@ def format_submission_for_api(db_submission):
     responses_dict = {}
     
     for response in db_submission.responses:
-        # If answer_data is stored as a JSON string, parse it back
-        if isinstance(response.answer_data, str):
+        # Get the answer data directly
+        answer_data = response.answer_data
+        
+        # Check if the data appears to be JSON-encoded (escaped Unicode in a string)
+        if isinstance(answer_data, str) and '\\u' in answer_data:
             try:
-                answer_data = json.loads(response.answer_data)
-            except:
-                # If it's not valid JSON, use it as is
-                answer_data = response.answer_data
-        else:
-            answer_data = response.answer_data
-            
+                # Try to decode the Unicode escape sequences
+                decoded = answer_data.encode().decode('unicode_escape')
+                # Strip any surrounding quotes that might have been added
+                if (decoded.startswith('"') and decoded.endswith('"')) or \
+                   (decoded.startswith("'") and decoded.endswith("'")):
+                    decoded = decoded[1:-1]
+                answer_data = decoded
+            except Exception as e:
+                logger.error(f"Error decoding answer data: {e}")
+        
+        # For lists that were converted to comma-separated strings,
+        # we could split them back into lists if we know the question type
+        # But for now, keeping it as a string is fine for display purposes
+        
         responses_dict[response.question_id] = answer_data
     
     return {
