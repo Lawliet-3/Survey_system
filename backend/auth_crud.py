@@ -68,6 +68,8 @@ def get_customer_survey_data(db: Session, customer_id: str):
     if not customer:
         return None
     
+    auth_cred = db.query(AuthCredential).filter(AuthCredential.customer_id == customer_id).first()
+
     latest_purchase = get_latest_purchase(db, customer_id)
     
     # Construct response data
@@ -79,6 +81,7 @@ def get_customer_survey_data(db: Session, customer_id: str):
         "marital_status": customer.marital_status,
         "has_children": customer.has_children,
         "province": customer.province,
+        "role": auth_cred.role if auth_cred else "user",
         "latest_purchase": {
             "purchase_id": latest_purchase.purchase_id,
             "brand": latest_purchase.brand,

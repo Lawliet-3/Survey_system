@@ -17,6 +17,7 @@ class Question(Base):
     is_required = Column(Boolean, default=True)
     display_order = Column(Integer)  # For ordering questions
     min_selections = Column(Integer, default=0)  # Minimum number of selections for MA questions
+    max_selections = Column(Integer, default=0)
 
     # Relationships
     responses = relationship("Response", back_populates="question")
@@ -70,6 +71,7 @@ class AuthCredential(Base):
     username = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     active = Column(Boolean, default=True)
+    role = Column(String, default="user")
     last_login = Column(TIMESTAMP)
     created_at = Column(TIMESTAMP, server_default=func.now())
     

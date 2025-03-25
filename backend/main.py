@@ -4,27 +4,38 @@ from sqlalchemy.orm import Session
 from sqlalchemy import inspect
 from typing import List, Dict
 import uuid
-import json
+import json, os
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from google_speech_service_improved import setup_improved_speech_routes
+import datetime
 
 import crud, models, schemas
 from database import engine, get_db
 from db_migration import migrate_database
 
 from auth_routes import router as auth_router
+from fastapi import APIRouter, UploadFile, File, Form
+from firebase_audio import FirebaseAudioService
+import logging
 
 app = FastAPI()
+
+router = APIRouter()
+
+app.include_router(router)
 
 setup_improved_speech_routes(app)
 
 app.include_router(auth_router)
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("firebase_upload")
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict this to your frontend domain
+    allow_origins=["https://survey-web-33.web.app", "http://localhost:3000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,8 +48,199 @@ except ImportError:
     GOOGLE_SPEECH_AVAILABLE = False
     print("WARNING: Google Cloud Speech libraries not installed. Speech-to-text features will be limited.")
 
+def get_firebase_service():
+    """
+    Get a configured Firebase service with improved error handling and logging
+    """
+    import os
+    import logging
+    
+    # Set up logging
+    logger = logging.getLogger("firebase_service")
+    logger.setLevel(logging.INFO)
+    
+    # Define potential paths for the service account file
+    potential_paths = [
+        "./service_accounts/survey-impower-firebase-adminsdk-fbsvc-061ea178c1.json",  # Original path
+        "../service_accounts/survey-impower-firebase-adminsdk-fbsvc-061ea178c1.json", # One directory up
+        "./service-accounts/survey-impower-firebase-adminsdk-fbsvc-061ea178c1.json",  # Alternative path with hyphen
+        os.path.join(os.getcwd(), "service_accounts/survey-impower-firebase-adminsdk-fbsvc-061ea178c1.json"), # Absolute path
+        os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH", "")  # From environment variable
+    ]
+    
+    # Firebase bucket name
+    bucket_name = os.environ.get("FIREBASE_BUCKET_NAME", "survey-impower.firebasestorage.app")
+    
+    # Try each path
+    for path in potential_paths:
+        if path and os.path.isfile(path):
+            logger.info(f"Found service account file at: {path}")
+            try:
+                # Try to create the service
+                from firebase_audio import FirebaseAudioService
+                service = FirebaseAudioService(path, bucket_name)
+                logger.info(f"Firebase service created successfully with bucket: {bucket_name}")
+                return service
+            except Exception as e:
+                logger.error(f"Failed to create Firebase service with path {path}: {str(e)}")
+    
+    logger.error("No valid service account file found in any of the potential paths")
+    logger.info(f"Current directory: {os.getcwd()}")
+    
+    # Check if service_accounts directory exists
+    if os.path.isdir("./service_accounts"):
+        logger.info("service_accounts directory exists, listing contents:")
+        for file in os.listdir("./service_accounts"):
+            logger.info(f"  - {file}")
+    else:
+        logger.warning("service_accounts directory does not exist")
+        # Try to create it
+        try:
+            os.makedirs("./service_accounts", exist_ok=True)
+            logger.info("Created service_accounts directory")
+        except Exception as dir_error:
+            logger.error(f"Failed to create service_accounts directory: {str(dir_error)}")
+    
+    # Return a dummy service that will log errors but not crash
+    from firebase_audio import FirebaseAudioService
+    logger.warning("Using dummy Firebase service. Uploads will fail but application will continue.")
+    
+    dummy_path = "./service_accounts/dummy.json"
+    # Create a minimal dummy file to avoid crashing
+    if not os.path.exists(dummy_path):
+        try:
+            import json
+            with open(dummy_path, 'w') as f:
+                json.dump({"dummy": True}, f)
+            logger.info("Created dummy service account file")
+        except Exception as write_error:
+            logger.error(f"Failed to create dummy file: {str(write_error)}")
+    
+    return FirebaseAudioService(dummy_path, bucket_name)
 
+@app.get("/api/firebase-test")
+async def firebase_direct_test():
+    """Test Firebase upload directly with a dummy file"""
+    try:
+        # Create a simple test file
+        test_content = b"This is a test file"
+        filename = f"test_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        
+        # Get Firebase service
+        firebase_service = get_firebase_service()
+        
+        # Get bucket and create blob
+        from firebase_admin import storage
+        bucket = storage.bucket()
+        blob = bucket.blob(f"test/{filename}")
+        
+        # Upload directly
+        blob.upload_from_string(test_content, content_type="text/plain")
+        
+        # Generate URL
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(days=1),
+            method="GET"
+        )
+        
+        return {
+            "success": True,
+            "message": "Direct upload successful",
+            "url": url,
+            "path": f"test/{filename}"
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
+@app.post("/api/upload-audio")
+async def upload_audio(
+    file: UploadFile = File(...),
+    question_id: str = Form(...),
+    user_id: str = Form("anonymous"),
+):
+    """Upload audio file to Firebase Storage and return the URL"""
+
+    print("=" * 50)
+    print(f"AUDIO UPLOAD ATTEMPT for {question_id} from {user_id}")
+    print(f"Content type: {file.content_type}, Size: {file.size} bytes")
+    print("=" * 50)
+
+    try:
+        print(f"Received audio upload request for question {question_id} from {user_id}")
+        print(f"File content type: {file.content_type}")
+        
+        # Get Firebase service with error handling
+        try:
+            firebase_service = get_firebase_service()
+            print("Firebase service initialized successfully")
+        except Exception as firebase_init_error:
+            error_details = str(firebase_init_error)
+            print(f"Firebase initialization error: {error_details}")
+            return {"success": False, "error": f"Firebase initialization error: {error_details}"}
+        
+        # Upload to Firebase with detailed error handling
+        try:
+            url = await firebase_service.upload_audio(file, user_id, question_id)
+            if url:
+                print(f"Upload successful: {url[:60]}...")
+                return {"success": True, "url": url}
+            else:
+                print("Upload failed - no URL returned")
+                return {"success": False, "error": "Upload failed - no URL returned"}
+        except Exception as upload_error:
+            error_details = str(upload_error)
+            print(f"Firebase upload error: {error_details}")
+            return {"success": False, "error": f"Firebase upload error: {error_details}"}
+            
+    except Exception as e:
+        error_details = str(e)
+        print(f"Unexpected error in upload endpoint: {error_details}")
+        return {"success": False, "error": f"Server error: {error_details}"}
+
+@router.get("/test-firebase")  # Note: no /api prefix for simplicity
+async def test_firebase_connection():
+    """Simple endpoint to test Firebase configuration"""
+    try:
+        # Check if service account file exists
+        service_account_path = "./service_accounts/survey-impower-firebase-adminsdk-fbsvc-061ea178c1.json"
+        file_exists = os.path.isfile(service_account_path)
+        
+        # Try to read the file to verify it's valid JSON
+        file_content = None
+        if file_exists:
+            try:
+                with open(service_account_path, 'r') as f:
+                    file_content = json.load(f)
+                    # Mask the private key for security
+                    if "private_key" in file_content:
+                        file_content["private_key"] = "***MASKED***"
+            except json.JSONDecodeError:
+                file_content = "File exists but is not valid JSON"
+            except Exception as e:
+                file_content = f"Error reading file: {str(e)}"
+        
+        # Return diagnostic information
+        return {
+            "status": "diagnostic_info",
+            "service_account_path": service_account_path,
+            "file_exists": file_exists,
+            "file_content_sample": file_content,
+            "current_directory": os.getcwd(),
+            "directory_contents": os.listdir("./service_accounts") if os.path.isdir("./service_accounts") else "service_accounts directory not found"
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 @app.get("/api/check-routes")
 def check_routes():
@@ -117,7 +319,8 @@ def prepare_question_for_response(db_question):
         isRequired=db_question.is_required,
         # Include displayOrder if it exists in your schema
         displayOrder=getattr(db_question, 'display_order', 0),
-        minSelections=min_selections
+        minSelections=min_selections,
+        maxSelections=db_question.max_selections
     )
 
 # Function to check if tables exist and create them if they don't

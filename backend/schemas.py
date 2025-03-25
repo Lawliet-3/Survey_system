@@ -29,6 +29,7 @@ class QuestionBase(BaseModel):
     logic: Optional[List[LogicRule]] = None
     isRequired: Optional[bool] = True
     minSelections: Optional[int] = 0
+    maxSelections: Optional[int] = 0
 
 
 class QuestionCreate(QuestionBase):
@@ -152,6 +153,7 @@ class CustomerSurveyData(BaseModel):
     has_children: Optional[bool] = None
     province: str
     latest_purchase: Optional[LatestPurchase] = None
+    role: Optional[str] = "user"
     
     class Config:
         from_attributes = True
