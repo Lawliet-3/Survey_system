@@ -1,0 +1,922 @@
+/* src/admin/AdminStyles.css */
+/* Login styles */
+.admin-login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f4f8;
+  }
+  
+  .admin-login-card {
+    width: 400px;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .admin-login-card h1 {
+    color: #1e3a8a;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .admin-error-message {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .admin-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .admin-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .admin-form-group label {
+    font-weight: 600;
+    color: #4b5563;
+  }
+  
+  .admin-form-group input {
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .admin-login-button {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #1e3a8a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .admin-login-button:hover {
+    background-color: #1e40af;
+  }
+  
+  .admin-login-help {
+    margin-top: 1.5rem;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  /* Dashboard styles */
+  .admin-dashboard {
+    min-height: 100vh;
+    background-color: #f0f4f8;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .admin-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: #1e3a8a;
+  }
+  
+  .admin-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .admin-error {
+    color: #b91c1c;
+    font-weight: 500;
+  }
+  
+  .admin-retry-button {
+    padding: 0.5rem 1rem;
+    background-color: #1e3a8a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .admin-error-banner {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 0.75rem 2rem;
+    position: relative;
+    text-align: center;
+  }
+  
+  .admin-error-close {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #b91c1c;
+  }
+  
+  .admin-header {
+    background-color: #1e3a8a;
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .admin-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: white;
+  }
+  
+  .admin-user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .admin-nav-button,
+  .admin-logout-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .admin-nav-button:hover,
+  .admin-logout-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .admin-content {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .admin-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    text-align: center;
+    color: #6b7280;
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+  }
+  
+  /* Questions management styles */
+  .admin-questions-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    height: calc(100vh - 180px);
+  }
+  
+  .admin-questions-list {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .admin-questions-list-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .admin-questions-list-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #1e3a8a;
+  }
+  
+  .admin-add-button {
+    padding: 0.5rem 1rem;
+    background-color: #1e3a8a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  
+  .admin-add-button:hover {
+    background-color: #1e40af;
+  }
+  
+  .admin-empty-list {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  .admin-question-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .admin-question-item {
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: stretch;
+  }
+  
+  .admin-question-item.active {
+    background-color: #eff6ff;
+  }
+  
+  .admin-question-item:hover {
+    background-color: #f9fafb;
+  }
+  
+  .admin-question-item-content {
+    padding: 1rem;
+    cursor: pointer;
+    flex: 1;
+  }
+  
+  .admin-question-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  
+  .admin-question-item-id {
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+  
+  .admin-question-item-type {
+    font-size: 0.75rem;
+    background-color: #e5e7eb;
+    color: #4b5563;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+  }
+  
+  .admin-question-item-text {
+    font-size: 0.875rem;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .admin-question-item-actions {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    border-left: 1px solid #e5e7eb;
+    justify-content: center;
+  }
+  
+  .admin-action-button {
+    border: none;
+    background: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.125rem 0;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .admin-action-button:hover {
+    color: #1f2937;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+  }
+  
+  .admin-action-button:disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+  }
+  
+  .admin-question-editor {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .admin-question-editor-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .admin-question-editor-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #1e3a8a;
+  }
+  
+  .admin-editor-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .admin-edit-button,
+  .admin-delete-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .admin-edit-button {
+    background-color: #3b82f6;
+    color: white;
+  }
+  
+  .admin-edit-button:hover {
+    background-color: #2563eb;
+  }
+  
+  .admin-delete-button {
+    background-color: #ef4444;
+    color: white;
+  }
+  
+  .admin-delete-button:hover {
+    background-color: #dc2626;
+  }
+  
+  .admin-question-form,
+  .admin-question-details {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .admin-form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .admin-form-group label {
+    display: block;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+  }
+  
+  .admin-form-group.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .admin-form-group.checkbox label {
+    margin-bottom: 0;
+  }
+  
+  .admin-form-input,
+  .admin-form-select,
+  .admin-form-textarea {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+  }
+  
+  .admin-form-textarea {
+    resize: vertical;
+  }
+  
+  .admin-option-row,
+  .admin-logic-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    align-items: center;
+  }
+  
+  .admin-option-value {
+    width: 80px;
+  }
+  
+  .admin-option-label {
+    flex: 1;
+  }
+  
+  .admin-logic-condition {
+    width: 120px;
+  }
+  
+  .admin-logic-value {
+    width: 120px;
+  }
+  
+  .admin-logic-jump {
+    flex: 1;
+  }
+  
+  .admin-remove-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background-color: #ef4444;
+    color: white;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .admin-remove-button:hover {
+    background-color: #dc2626;
+  }
+  
+  .admin-remove-button:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  .admin-add-option-button,
+  .admin-add-logic-button {
+    padding: 0.5rem 0.75rem;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 0.5rem;
+  }
+  
+  .admin-add-option-button:hover,
+  .admin-add-logic-button:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .admin-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+  
+  .admin-cancel-button,
+  .admin-save-button {
+    padding: 0.625rem 1.25rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+  }
+  
+  .admin-cancel-button {
+    background-color: #f3f4f6;
+    color: #4b5563;
+  }
+  
+  .admin-cancel-button:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .admin-save-button {
+    background-color: #10b981;
+    color: white;
+  }
+  
+  .admin-save-button:hover {
+    background-color: #059669;
+  }
+  
+  .admin-save-button:disabled,
+  .admin-cancel-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .admin-detail-item {
+    margin-bottom: 1.25rem;
+  }
+  
+  .admin-detail-label {
+    display: block;
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 0.875rem;
+    margin-bottom: 0.375rem;
+  }
+  
+  .admin-detail-value {
+    color: #1f2937;
+    line-height: 1.5;
+  }
+  
+  .admin-detail-options,
+  .admin-detail-logic {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+  }
+  
+  .admin-detail-options li,
+  .admin-detail-logic li {
+    padding: 0.5rem;
+    background-color: #f9fafb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Responses view styles */
+  .admin-responses-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 1.5rem;
+    height: calc(100vh - 180px);
+  }
+  
+  .admin-responses-list {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.25rem;
+  }
+  
+  .admin-responses-list h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    color: #1e3a8a;
+  }
+  
+  .admin-responses-table {
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .admin-responses-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .admin-responses-table th,
+  .admin-responses-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .admin-responses-table th {
+    font-weight: 600;
+    color: #4b5563;
+    background-color: #f9fafb;
+  }
+  
+  .admin-responses-table tr {
+    cursor: pointer;
+  }
+  
+  .admin-responses-table tr:hover {
+    background-color: #f9fafb;
+  }
+  
+  .admin-responses-table tr.active {
+    background-color: #eff6ff;
+  }
+  
+  .admin-view-button {
+    padding: 0.25rem 0.5rem;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  
+  .admin-response-detail {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1.25rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .admin-response-detail h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    color: #1e3a8a;
+  }
+  
+  .admin-response-card {
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 1.25rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .admin-response-card h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+    color: #1f2937;
+  }
+  
+  .admin-response-timestamp {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .admin-response-answers h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    color: #4b5563;
+  }
+  
+  .admin-answers-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .admin-answers-table th,
+  .admin-answers-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .admin-answers-table th {
+    font-weight: 600;
+    color: #4b5563;
+    background-color: #f1f5f9;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 1024px) {
+    .admin-questions-grid,
+    .admin-responses-grid {
+      grid-template-columns: 1fr;
+      height: auto;
+      gap: 1rem;
+    }
+    
+    .admin-questions-list,
+    .admin-responses-list {
+      height: 350px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .admin-header {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    
+    .admin-content {
+      padding: 1rem;
+    }
+    
+    .admin-user-info {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .admin-question-editor-header,
+    .admin-questions-list-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    
+    .admin-editor-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+    
+    .admin-option-row,
+    .admin-logic-row {
+      flex-wrap: wrap;
+    }
+    
+    .admin-option-value,
+    .admin-option-label,
+    .admin-logic-condition,
+    .admin-logic-value,
+    .admin-logic-jump {
+      flex-basis: 100%;
+      width: 100%;
+    }
+    
+    .admin-remove-button {
+      margin-left: auto;
+    }
+  }
+
+  /* Add these styles to your AdminStyles.css file */
+
+.admin-db-init {
+  padding: 1.5rem;
+}
+
+.admin-db-init h2 {
+  color: #1e3a8a;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.admin-db-init-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.admin-db-init-card h3 {
+  color: #1e3a8a;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.admin-db-init-card p {
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.admin-success-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.admin-init-db-button {
+  background-color: #1e3a8a;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.admin-init-db-button:hover {
+  background-color: #1e40af;
+}
+
+.admin-init-db-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.p11-response-table {
+  margin-top: 10px;
+}
+
+.p11-response-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.p11-response-table th,
+.p11-response-table td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.p11-response-table th {
+  background-color: #f0f7ff;
+  font-weight: 600;
+}
+
+.p11-response-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.p11-editor {
+  padding: 1rem 0;
+}
+
+.admin-form-help {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #f0f7ff;
+  border-radius: 4px;
+  border-left: 3px solid #3b82f6;
+}
+
+.p11-attributes-list {
+  margin-top: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.p11-attribute-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+}
+
+.p11-attribute-item:last-child {
+  margin-bottom: 0;
+}
+
+.p11-attribute-id {
+  font-weight: 600;
+  width: 30px;
+  color: #4b5563;
+}
+
+.p11-attribute-text {
+  flex: 1;
+}
+
+.p11-attribute-item-view {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 4px;
+}
