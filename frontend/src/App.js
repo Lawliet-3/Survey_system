@@ -40,6 +40,10 @@ function App() {
   // Keep track of the available questions based on logic rules
   const [activeQuestionIndices, setActiveQuestionIndices] = useState([]);
 
+  if (typeof window !== 'undefined') {
+    window.getSurveyData = getSurveyData; // Make available to pipeLogicService
+  }
+
   useEffect(() => {
     console.log("P11 completion state changed:", p11StatementsCompleted);
   }, [p11StatementsCompleted]);
@@ -151,208 +155,336 @@ function App() {
     if (questions.length === 0) return;
 
     const calculateActiveQuestions = () => {
-  // Start with just the first question active
-  const activatedQuestions = [0];
-  
-  // Track which questions will be shown through normal sequence
-  const sequentialFlow = new Set([0]); // First question is in normal flow
-  
-  // Track which questions will be shown due to logic jumps
-  const logicTriggeredQuestions = new Set();
-  
-  // Get user location data for custom logic
-  const userData = getSurveyData();
-  const isUserFromBangkok = userData && (
-    userData.province === 'Bangkok' || 
-    ['Nakhon Pathom', 'Pathum Thani', 'Nonthaburi', 'Samut Prakan', 'Samut Sakhon'].includes(userData.province)
-  );
-  
-  // Get user status for lapser vs user flow
-  const userStatus = userData?.userStatus || "No Purchase";
-  
-  console.log("🔍 ROUTING LOGIC - User status:", userStatus);
-  
-  // FIRST: Find all relevant question indices
-  const questionIndices = {};
-  ['P8d', 'P9a', 'P9b', 'P9c', 'P9d', 'P9e', 'P10', 'P11'].forEach(id => {
-    questionIndices[id] = questionMap[id];
-    console.log(`Question ${id} is at index ${questionIndices[id]}`);
-  });
-  
-  // Process normal question flow first (P1 to P8d)
-  // This builds the basic sequential flow
-  for (let i = 0; i < Math.min(questionIndices.P8d || questions.length, questions.length); i++) {
-    if (i + 1 < questions.length) {
-      sequentialFlow.add(i + 1);
-    }
-  }
-  
-  // LAPSER SPECIFIC ROUTING: Handle based on user status
-  if (userStatus === "Lapser") {
-    console.log("🔄 APPLYING LAPSER FLOW LOGIC");
-    
-    // REMOVE P9a-c and P10
-    ['P9a', 'P9b', 'P9c', 'P10'].forEach(id => {
-      if (questionIndices[id] !== undefined) {
-        sequentialFlow.delete(questionIndices[id]);
-        console.log(`Removed ${id} from flow for Lapser`);
-      }
-    });
-    
-    // ADD P9d and P9e to flow
-    ['P9d', 'P9e'].forEach(id => {
-      if (questionIndices[id] !== undefined) {
-        sequentialFlow.add(questionIndices[id]);
-        console.log(`Added ${id} to flow for Lapser`);
-      }
-    });
-    
-    // Ensure P9d follows P8d
-    if (questionIndices.P8d !== undefined && questionIndices.P9d !== undefined) {
-      console.log("Setting up P8d → P9d jump for Lapser");
-      // We could use logic rules here if needed
-    }
-    
-    // Make P9e jump to P11
-    if (questionIndices.P9e !== undefined && questionIndices.P11 !== undefined) {
-      console.log("Setting up P9e → P11 jump for Lapser");
-      // We add P11 but P10 is already removed
-      sequentialFlow.add(questionIndices.P11);
-    }
-  } else {
-    console.log("🔄 APPLYING NORMAL USER FLOW LOGIC");
-    
-    // REMOVE P9d and P9e
-    ['P9d', 'P9e'].forEach(id => {
-      if (questionIndices[id] !== undefined) {
-        sequentialFlow.delete(questionIndices[id]);
-        console.log(`Removed ${id} from flow for normal User`);
-      }
-    });
-    
-    // KEEP P9a-c and P10 in flow (they should be there by default)
-  }
-  
-  // Special logic for D1 based on location and answer
-  for (let i = 0; i < questions.length; i++) {
-    // Only process questions that are in the normal flow or triggered by logic
-    if (!sequentialFlow.has(i) && !logicTriggeredQuestions.has(i)) continue;
-    
-    const currentQuestion = questions[i];
-    const currentAnswer = answers[currentQuestion.id];
-    
-    if (currentQuestion.id === 'D1' && currentAnswer) {
-      // If user from Bangkok AND selects options 1 or 2, jump to END
-      if (isUserFromBangkok && (currentAnswer === '1' || currentAnswer === '2')) {
-        if (questionMap.hasOwnProperty('END')) {
-          console.log(`Special logic: Bangkok user with low income (${currentAnswer}), jumping to END`);
-          const endIndex = questionMap['END'];
-          logicTriggeredQuestions.add(endIndex);
-          
-          // Skip standard logic for this question
-          continue;
-        }
-      }
-      // If user from outside Bangkok AND selects option 1, jump to END
-      else if (!isUserFromBangkok && currentAnswer === '1') {
-        if (questionMap.hasOwnProperty('END')) {
-          console.log(`Special logic: Non-Bangkok user with very low income (${currentAnswer}), jumping to END`);
-          const endIndex = questionMap['END'];
-          logicTriggeredQuestions.add(endIndex);
-          
-          // Skip standard logic for this question
-          continue;
-        }
-      }
-    }
-    
-    // Process regular logic rules if they exist
-    if (currentQuestion.logic && currentQuestion.logic.length > 0) {
-      let anyRuleMatched = false;
-      
-      for (const rule of currentQuestion.logic) {
-        let conditionMet = false;
-        
-        // Check if the condition is met (with string conversion for consistency)
-        if (rule.condition === 'equals' && String(currentAnswer) === String(rule.value)) {
-          conditionMet = true;
-        } else if (rule.condition === 'not_equals' && String(currentAnswer) !== String(rule.value)) {
-          conditionMet = true;
-        } else if (rule.condition === 'contains' && 
-                  Array.isArray(currentAnswer) && 
-                  currentAnswer.some(item => String(item) === String(rule.value))) {
-          conditionMet = true;
-        }
-        
-        // If condition is met, add the jump-to question to active questions
-        if (conditionMet && rule.jumpToQuestion && questionMap.hasOwnProperty(rule.jumpToQuestion)) {
-          const jumpToIndex = questionMap[rule.jumpToQuestion];
-          logicTriggeredQuestions.add(jumpToIndex);
-          anyRuleMatched = true;
-          
-          console.log(`Logic match for ${currentQuestion.id}: answer=${currentAnswer}, rule=${rule.condition}:${rule.value}, jumping to ${rule.jumpToQuestion} (index ${jumpToIndex})`);
-        }
-      }
-      
-      // Only add the next question to sequential flow if no logic rules matched
-      if (!anyRuleMatched && i + 1 < questions.length) {
-        sequentialFlow.add(i + 1);
-      }
-    } 
-    // If no logic rules, add next question to sequential flow
-    else if (i + 1 < questions.length) {
-      sequentialFlow.add(i + 1);
-    }
-  }
-  
-  // Second pass: Check which questions should be excluded
-  // Questions with logic rules pointing to them should ONLY appear if triggered by logic
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
-    
-    // Check if this question is the target of any logic rule
-    const isLogicTarget = questions.some(q => 
-      q.logic && q.logic.some(rule => rule.jumpToQuestion === question.id)
-    );
-    
-    // If it's a logic target and not triggered by logic, remove from sequential flow
-    if (isLogicTarget && !logicTriggeredQuestions.has(i)) {
-      sequentialFlow.delete(i);
-      console.log(`Excluding ${question.id} from sequential flow - it's a logic target but no logic rule matched`);
-    }
-  }
-  
-  const endIndex = questions.findIndex(q => q.id === 'END');
-  if (endIndex !== -1) {
-    const isEndInFlow = sequentialFlow.has(endIndex) || logicTriggeredQuestions.has(endIndex);
-    
-    // Debug to see what's happening
-    console.log(`END check: index=${endIndex}, inFlow=${isEndInFlow}`);
-    
-    // Check if user should qualify based on D1 answer
-    const d1Answer = answers['D1'];
-    if (d1Answer) {
-      const shouldTerminate = 
-        (isUserFromBangkok && (d1Answer === '1' || d1Answer === '2')) || 
-        (!isUserFromBangkok && d1Answer === '1');
-      
-      console.log(`Qualification check: D1=${d1Answer}, Bangkok=${isUserFromBangkok}, shouldTerminate=${shouldTerminate}`);
-      
-      // If user qualifies (shouldn't be terminated) but END is in flow, remove it
-      if (!shouldTerminate && isEndInFlow) {
-        console.log('User qualifies - removing END question from flow');
-        sequentialFlow.delete(endIndex);
-        logicTriggeredQuestions.delete(endIndex);
-      }
-    }
-  }
+      // Start with just the first question active
+      const activatedQuestions = [0];
 
-  // Combine all active questions
-  const allActiveQuestions = [...sequentialFlow, ...logicTriggeredQuestions];
-  
-  // Convert to array, sort, and return
-  return [...new Set(allActiveQuestions)].sort((a, b) => a - b);
-};
+      let userTerminated = false;
+      
+      // Track which questions will be shown through normal sequence
+      const sequentialFlow = new Set([0]); // First question is in normal flow
+      
+      // Track which questions will be shown due to logic jumps
+      const logicTriggeredQuestions = new Set();
+      
+      // Track questions to completely exclude from logic processing
+      const excludedQuestions = new Set();
+      
+      // Get user location data for custom logic
+      const userData = getSurveyData();
+      
+      // FIRST define isUserFromBangkok
+      const isUserFromBangkok = userData && (
+        userData.province === 'Bangkok' || 
+        ['Nakhon Pathom', 'Pathum Thani', 'Nonthaburi', 'Samut Prakan', 'Samut Sakhon'].includes(userData.province)
+      );
+      
+      // THEN use it in debug logging
+      console.log("User data for qualification check:", {
+        available: !!userData,
+        province: userData?.province,
+        isBangkok: isUserFromBangkok,
+        d1Answer: answers['D1']
+      });
+      
+      // Get user status for lapser vs user flow
+      const userStatus = userData?.userStatus || "No Purchase";
+      
+      console.log("🔍 ROUTING LOGIC - User status:", userStatus);
+      
+      // Find all relevant question indices
+      const questionIndices = {};
+      ['P8d', 'P9a', 'P9b', 'P9c', 'P9d', 'P9e', 'P10', 'P11', 'P12a', 'P12b', 'END'].forEach(id => {
+        questionIndices[id] = questionMap[id];
+        console.log(`Question ${id} is at index ${questionIndices[id]}`);
+      });
+      
+      // CRITICAL: Always include P10 by default - we'll only exclude it in specific cases
+      if (questionIndices.P10 !== undefined) {
+        sequentialFlow.add(questionIndices.P10);
+        console.log("⭐ Including P10 by default for all users");
+      }
+      
+      // DETERMINE USER FLOW BASED ON USER TYPE
+      if (userStatus === "Lapser") {
+        console.log("🔄 APPLYING LAPSER FLOW LOGIC");
+        
+        // For Lapsers: exclude P9a, P9b, P9c
+        ['P9a', 'P9b', 'P9c', 'P10'].forEach(id => {
+          if (questionIndices[id] !== undefined) {
+            excludedQuestions.add(questionIndices[id]);
+            console.log(`Excluding ${id} for Lapser`);
+          }
+        });
+        
+        // Handle P9d "Did not buy" logic for Lapsers
+        const p9dAnswer = answers['P9d'];
+        const didNotBuy = Array.isArray(p9dAnswer) && p9dAnswer.some(val => 
+          String(val) === "99" || String(val).includes("99")
+        );
+        
+        if (didNotBuy) {
+          console.log("SPECIAL CASE: Lapser with 'Did not buy' selected: Skip P9e and P10");
+          
+          // Exclude P9e and P10 if "Did not buy" selected
+          if (questionIndices.P9e !== undefined) {
+            excludedQuestions.add(questionIndices.P9e);
+            console.log("Excluding P9e for 'Did not buy' Lapser");
+          }
+          
+          // Also exclude P10 ONLY in this specific case
+          if (questionIndices.P10 !== undefined) {
+            excludedQuestions.add(questionIndices.P10);
+            console.log("Excluding P10 for 'Did not buy' Lapser");
+            
+            // Since we've excluded P10, make sure P11 is directly included
+            if (questionIndices.P11 !== undefined) {
+              sequentialFlow.add(questionIndices.P11);
+              console.log("Ensuring P11 follows after P9d for 'Did not buy' Lapser");
+            }
+          }
+        }
+      } else {
+        console.log("🔄 APPLYING NORMAL USER FLOW LOGIC");
+        
+        // For normal users: exclude P9d and P9e
+        ['P9d', 'P9e'].forEach(id => {
+          if (questionIndices[id] !== undefined) {
+            excludedQuestions.add(questionIndices[id]);
+            console.log(`Excluding ${id} for normal users`);
+          }
+        });
+        
+        // Check P9a answer for normal users
+        const p9aAnswer = answers['P9a'];
+        if (p9aAnswer === "2" || p9aAnswer === 2) {  // "No" answer
+          // Exclude P9b and P9c if "No" selected
+          console.log("Normal user answered 'No' to P9a: Skip P9b and P9c");
+          ['P9b', 'P9c'].forEach(id => {
+            if (questionIndices[id] !== undefined) {
+              excludedQuestions.add(questionIndices[id]);
+            }
+          });
+        }
+      }
+      
+      // ENSURE CRITICAL QUESTIONS ARE ALWAYS INCLUDED
+      ['P11', 'P12a', 'P12b'].forEach(id => {
+        if (questionIndices[id] !== undefined) {
+          sequentialFlow.add(questionIndices[id]);
+          console.log(`Ensuring ${id} is included for all users`);
+        }
+      });
+      
+      // Build the sequential flow (exclude already marked questions)
+      for (let i = 0; i < questions.length; i++) {
+        // Skip excluded questions
+        if (excludedQuestions.has(i)) continue;
+        
+        // Add to sequential flow (first question [0] is already added)
+        if (i > 0) {
+          sequentialFlow.add(i);
+        }
+      }
+      
+      // Process special logic for D1 and other questions
+      for (let i = 0; i < questions.length; i++) {
+        // Skip excluded questions and questions not in the flow
+        if (excludedQuestions.has(i) || (!sequentialFlow.has(i) && !logicTriggeredQuestions.has(i))) {
+          continue;
+        }
+        
+        const currentQuestion = questions[i];
+        const currentAnswer = answers[currentQuestion.id];
+        
+        // Special logic for D1 based on location and answer
+        if (currentQuestion.id === 'D1' && currentAnswer) {
+          console.log(`Processing D1 termination logic: Answer=${currentAnswer}, isBangkok=${isUserFromBangkok}`);
+          
+          // Convert the answer to string to ensure consistent comparison
+          const answerStr = String(currentAnswer).trim();
+          
+          // If user from Bangkok AND selects options 1 or 2, jump to END
+          if (isUserFromBangkok && (answerStr === '1' || answerStr === '2')) {
+            // Find the END question index
+            const endIndex = questionMap['END'];
+            
+            if (endIndex !== undefined) {
+              console.log(`TERMINATION: Bangkok user with low income (${answerStr}), jumping to END`);
+              
+
+              userTerminated = true;
+              // Important: Clear the sequential flow and ONLY keep the END question
+              // This ensures no other questions appear after D1
+              sequentialFlow.clear();
+              logicTriggeredQuestions.clear();
+              
+              // Add only END to active questions
+              logicTriggeredQuestions.add(endIndex);
+              
+              // Skip processing any further logic for this question
+              continue;
+            } else {
+              console.error("END question not found in question map!");
+            }
+          }
+          // If user from outside Bangkok AND selects option 1, jump to END
+          else if (!isUserFromBangkok && answerStr === '1') {
+            // Find the END question index
+            const endIndex = questionMap['END'];
+            
+            if (endIndex !== undefined) {
+              console.log(`TERMINATION: Non-Bangkok user with very low income (${answerStr}), jumping to END`);
+              
+
+              userTerminated = true;
+              // Important: Clear the sequential flow and ONLY keep the END question
+              // This ensures no other questions appear after D1
+              sequentialFlow.clear();
+              logicTriggeredQuestions.clear();
+              
+              // Add only END to active questions
+              logicTriggeredQuestions.add(endIndex);
+              
+              // Skip processing any further logic for this question
+              continue;
+            } else {
+              console.error("END question not found in question map!");
+            }
+          } else {
+            console.log(`User qualifies with income ${answerStr} and location (Bangkok: ${isUserFromBangkok})`);
+          }
+        }
+        
+        // Process regular logic rules
+        if (currentQuestion.logic && currentQuestion.logic.length > 0) {
+          let anyRuleMatched = false;
+          
+          for (const rule of currentQuestion.logic) {
+            let conditionMet = false;
+            
+            // Check if the condition is met (with string conversion for consistency)
+            if (rule.condition === 'equals' && String(currentAnswer) === String(rule.value)) {
+              conditionMet = true;
+            } else if (rule.condition === 'not_equals' && String(currentAnswer) !== String(rule.value)) {
+              conditionMet = true;
+            } else if (rule.condition === 'contains' && 
+                      Array.isArray(currentAnswer) && 
+                      currentAnswer.some(item => String(item) === String(rule.value))) {
+              conditionMet = true;
+            }
+            
+            // If condition is met, add the jump-to question to active questions
+            if (conditionMet && rule.jumpToQuestion && questionMap.hasOwnProperty(rule.jumpToQuestion)) {
+              const jumpToIndex = questionMap[rule.jumpToQuestion];
+              
+              // Don't add excluded questions even if logic says so
+              if (!excludedQuestions.has(jumpToIndex)) {
+                logicTriggeredQuestions.add(jumpToIndex);
+                anyRuleMatched = true;
+                
+                console.log(`Logic match for ${currentQuestion.id}: answer=${currentAnswer}, rule=${rule.condition}:${rule.value}, jumping to ${rule.jumpToQuestion} (index ${jumpToIndex})`);
+              } else {
+                console.log(`Logic match for ${currentQuestion.id} would go to excluded question ${rule.jumpToQuestion} - skipping`);
+              }
+            }
+          }
+          
+          // Only add the next question to sequential flow if no logic rules matched
+          if (!anyRuleMatched && i + 1 < questions.length && !excludedQuestions.has(i + 1)) {
+            sequentialFlow.add(i + 1);
+          }
+        } 
+        // If no logic rules, add next question to sequential flow
+        else if (i + 1 < questions.length && !excludedQuestions.has(i + 1)) {
+          sequentialFlow.add(i + 1);
+        }
+      }
+      
+      // Second pass: Check which questions should be excluded
+      // Questions with logic rules pointing to them should ONLY appear if triggered by logic
+      for (let i = 0; i < questions.length; i++) {
+        if (excludedQuestions.has(i)) continue; // Skip already excluded questions
+        
+        const question = questions[i];
+        
+        // Check if this question is the target of any logic rule
+        const isLogicTarget = questions.some(q => 
+          q.logic && q.logic.some(rule => rule.jumpToQuestion === question.id)
+        );
+        
+        // If it's a logic target and not triggered by logic, remove from sequential flow
+        if (isLogicTarget && !logicTriggeredQuestions.has(i)) {
+          sequentialFlow.delete(i);
+          console.log(`Excluding ${question.id} from sequential flow - it's a logic target but no logic rule matched`);
+        }
+      }
+      
+      const endIndex = questions.findIndex(q => q.id === 'END');
+      if (endIndex !== -1) {
+        const isEndInFlow = sequentialFlow.has(endIndex) || logicTriggeredQuestions.has(endIndex);
+        
+        // Debug to see what's happening
+        console.log(`END check: index=${endIndex}, inFlow=${isEndInFlow}`);
+        
+        // Check if user should qualify based on D1 answer
+        const d1Answer = answers['D1'];
+        if (d1Answer) {
+          const shouldTerminate = 
+            (isUserFromBangkok && (d1Answer === '1' || d1Answer === '2')) || 
+            (!isUserFromBangkok && d1Answer === '1');
+          
+          console.log(`Qualification check: D1=${d1Answer}, Bangkok=${isUserFromBangkok}, shouldTerminate=${shouldTerminate}`);
+          
+          // If user qualifies (shouldn't be terminated) but END is in flow, remove it
+          if (!shouldTerminate && isEndInFlow) {
+            console.log('User qualifies - removing END question from flow');
+            sequentialFlow.delete(endIndex);
+            logicTriggeredQuestions.delete(endIndex);
+          }
+        }
+      }
+    
+      // Combine all active questions
+      const allActiveQuestions = [...sequentialFlow, ...logicTriggeredQuestions];
+      
+      // Final check - make sure excluded questions stay excluded
+      const filteredActiveQuestions = allActiveQuestions.filter(index => 
+        !excludedQuestions.has(index)
+      );
+      
+      // FINAL CHECK: Ensure critical questions are always included (even if accidentally excluded)
+      if(!userTerminated){
+        const criticalQuestions = ['P11', 'P12a', 'P12b'];
+      
+        if (userStatus !== "Lapser" && questionIndices.P10 !== undefined) {
+          criticalQuestions.push('P10');
+        }
+        
+        criticalQuestions.forEach(id => {
+          if (questionIndices[id] !== undefined && !filteredActiveQuestions.includes(questionIndices[id])) {
+            console.log(`Adding critical question ${id} back into the flow`);
+            filteredActiveQuestions.push(questionIndices[id]);
+          }
+        });
+      }
+      // Final safety check - ensure we have at least one question
+      if (filteredActiveQuestions.length === 0 && questions.length > 0) {
+        // If no questions were filtered through, include at least the first question
+        console.log("No active questions found - defaulting to first question");
+        return [0];
+      }
+      
+      // Make sure the current question index is included in active questions
+      if (!filteredActiveQuestions.includes(currentQuestionIndex) && questions.length > 0) {
+        console.log(`Current question ${currentQuestionIndex} not found in active questions - adding it`);
+        filteredActiveQuestions.push(currentQuestionIndex);
+      }
+      
+      
+      
+      // Convert to array, sort, and return
+      return [...new Set(filteredActiveQuestions)].sort((a, b) => a - b);
+    };
 
     const activeQuestions = calculateActiveQuestions();
     setActiveQuestionIndices(activeQuestions);
@@ -383,22 +515,26 @@ function App() {
           day: 'numeric'
         });
         
+        // Get product details
+        const productType = purchase.productType || '';
+        const productName = purchase.productName || '';
+        const fullProductDesc = `${productType} ${productName}`;
+        
         // Find and update the P9a question text
         const p9aIndex = questionsToProcess.findIndex(q => q.id === 'P9a');
         if (p9aIndex !== -1) {
-          // Replace placeholders in question text
-          const originalText = questionsToProcess[p9aIndex].questionText;
-          const originalSubtext = questionsToProcess[p9aIndex].questionSubtext;
+          console.log("Found P9a question, updating with purchase details:", fullProductDesc, formattedDate);
           
-          // Update with purchase details
-          questionsToProcess[p9aIndex].questionText = originalText.replace('most recent purchase', 
-            `purchase of ${purchase.productType} on ${formattedDate}`);
+          // Complete replacement of text for more reliable updates
+          questionsToProcess[p9aIndex].questionText = 
+            `ก่อนที่คุณจะซื้อเสื้อผ้า/เครื่องประดับที่ ร้านแม็ค ยีนส์ ${fullProductDesc} เมื่อ ${formattedDate} คุณได้เปรียบเทียบแม็คยีนส์กับยี่ห้ออื่นหรือไม่?`;
           
-          // Update subtext if needed
-          if (originalSubtext && purchase.brand === 'Mc Jeans') {
-            questionsToProcess[p9aIndex].questionSubtext = originalSubtext.replace('ร้านแม๊ค ยีนส์ ครั้งล่าสุด', 
-              `ร้านแม๊ค ยีนส์ ครั้งล่าสุดเมื่อ ${formattedDate}`);
-          }
+          questionsToProcess[p9aIndex].questionSubtext = 
+            `Before making your purchase of ${fullProductDesc} on ${formattedDate}, did you make any brand comparisons before you made your decision to purchase?`;
+          
+          console.log("Updated P9a with:", questionsToProcess[p9aIndex].questionText);
+        } else {
+          console.log("P9a question not found in array");
         }
       }
       
@@ -782,7 +918,6 @@ function App() {
       }
     });
 
-    // Handle completion of the attribute questionnaire
     const handleAttributesComplete = (allSelections) => {
       console.log('P11 statements completed!', allSelections);
       // Instead of creating separate entries for P11a, P11b, etc.,
@@ -793,8 +928,14 @@ function App() {
         'P11': allSelections
       }));
       
-      // Move to the next question
+      // Set completed flag
       setP11StatementsCompleted(true);
+      
+      // Automatically move to the next question
+      const nextIndex = findNextQuestionIndex();
+      if (nextIndex > currentQuestionIndex) {
+        setCurrentQuestionIndex(nextIndex);
+      }
     };
 
     console.log('P11 completion state:', p11StatementsCompleted);
@@ -823,7 +964,7 @@ function App() {
       
       <h1>Survey</h1>
       <p className="question-count">
-        Question {currentActiveIndex + 1} of {activeQuestionsCount}
+        Question {Math.max(currentActiveIndex + 1, 1)} of {Math.max(activeQuestionsCount, 1)}
       </p>
 
       <div className="question-container">
@@ -896,30 +1037,24 @@ function App() {
       </div>
 
       <div className="button-container">
-        <button
-          onClick={handlePrevious}
-          disabled={currentQuestionIndex === 0}
-          className="btn btn-secondary"
-        >
-          Previous
-        </button>
-        
-        <button 
-          onClick={handleNext}
-          disabled={
-            (isSubmitting || (currentQuestion.id === 'P11' && !p11StatementsCompleted)) 
-              ? (console.log('Next button disabled:', {
-                  isSubmitting, 
-                  isP11: currentQuestion.id === 'P11', 
-                  p11Completed: p11StatementsCompleted
-                }), true) 
-              : false
-          }
-          className="btn btn-primary"
-        >
+      <button
+        onClick={handlePrevious}
+        disabled={currentQuestionIndex === 0}
+        className="btn btn-secondary"
+      >
+        Previous
+      </button>
+    
+    {currentQuestion.id !== 'P11' && (
+      <button 
+        onClick={handleNext}
+        disabled={isSubmitting}
+        className="btn btn-primary"
+      >
         {currentActiveIndex < activeQuestionsCount - 1 ? 'Next' : (isSubmitting ? 'Submitting...' : 'Submit')}
       </button>
-      </div>
+    )}
+    </div>
     </div>
   );
 }

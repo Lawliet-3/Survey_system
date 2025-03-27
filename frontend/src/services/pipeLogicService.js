@@ -2,6 +2,9 @@
 /**
  * Helper service to handle complex question piping logic
  */
+if (typeof window !== 'undefined') {
+  window.getSurveyData = null; // Will be set from App.js
+}
 
 // Define question ID prefixes for easier identification
 const QUESTION_IDS = {
@@ -17,6 +20,8 @@ const QUESTION_IDS = {
   COMPARISON_MADE: 'P9a',
   COMPARED_BRANDS: 'P9b',
   COMPARISON_FACTORS: 'P9c',
+  RECENT_BRAND_PURCHASE: 'P9d',
+  STOP_BUYING_REASON: 'P9e', 
   PURCHASE_REASON: 'P10',
   BRAND_ATTRIBUTES: 'P11',
   MEDIA_EXPOSURE: 'P12a',
@@ -261,6 +266,83 @@ return {
     } else {
       console.log("No P6 values available for P9b");
     }
+    
+    return question;
+  },
+
+  // ADD THIS NEW PROCESSOR for P9a
+  [QUESTION_IDS.COMPARISON_MADE]: (question) => {
+    // Get user data from the context via window
+    const userData = window.getSurveyData ? window.getSurveyData() : null;
+    
+    if (userData && userData.latestPurchase) {
+      const purchase = userData.latestPurchase;
+      const purchaseDate = new Date(purchase.purchaseDate);
+      const formattedDate = purchaseDate.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Create purchase description in both languages
+      const productType = purchase.productType || '';
+      const productName = purchase.productName || '';
+      const englishPurchaseDesc = `${productType} ${productName} on ${formattedDate}`;
+      const thaiPurchaseDesc = `${productType} ${productName} เมื่อ ${formattedDate}`;
+      
+      // Look for the exact placeholder in both questions
+      if (question.questionText) {
+        question.questionText = question.questionText.replace(
+          /<\*\*Show most recent purchased product from CRM database>\*\*/g,
+          thaiPurchaseDesc
+        );
+      }
+      
+      if (question.questionSubtext) {
+        question.questionSubtext = question.questionSubtext.replace(
+          /<\*\*Show most recent purchased product from CRM database>\*\*/g,
+          englishPurchaseDesc
+        );
+      }
+      
+      console.log(`P9a: Updated with purchase details: ${thaiPurchaseDesc}`);
+    }
+    
+    return question;
+  },
+
+  // P9d: Recent brand purchase options from P6 (P3 + P5)
+  [QUESTION_IDS.RECENT_BRAND_PURCHASE]: (question) => {
+    console.log(`Processing ${QUESTION_IDS.RECENT_BRAND_PURCHASE}. Getting brands from P6...`);
+    
+    // Create a union of P3 and P5 answers
+    const p3Answers = answers[QUESTION_IDS.CURRENT_USE] || [];
+    const p5Answers = answers[QUESTION_IDS.FUTURE_CONSIDER] || [];
+    const p6Values = [...new Set([...p3Answers, ...p5Answers])];
+    
+    console.log(`P6 values for P9d: ${JSON.stringify(p6Values)}`);
+    
+    // Start with existing options (to keep "Did not buy" option)
+    const existingOptions = question.options || [];
+    
+    // Keep only the "Did not buy" option if it exists
+    const didNotBuyOption = existingOptions.find(opt => opt.value === '99');
+    
+    // Get all brand options that are in P6
+    const brandFromP6 = p6Values.length > 0 
+      ? brandOptions.filter(option => p6Values.includes(option.value))
+      : brandOptions.slice(0, 5); // Fallback to first 5 brands if no P6 values
+    
+    // Combine all options
+    question.options = [
+      ...brandFromP6,
+      ...(didNotBuyOption ? [didNotBuyOption] : [{
+        value: '99',
+        label: 'ไม่ได้ซื้อเสื้อผ้าเลยในช่วงที่ผ่านมา (Did not buy any clothing recently)'
+      }])
+    ];
+    
+    console.log(`P9d: Piped ${brandFromP6.length} brands from P6 plus "Did not buy" option`);
     
     return question;
   },

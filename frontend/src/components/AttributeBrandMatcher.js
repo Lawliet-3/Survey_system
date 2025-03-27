@@ -249,7 +249,7 @@ const AttributeQuestionnaire = ({
             onClick={goToNext}
             disabled={currentIndex === attributes.length - 1 && !validateAllSelectionsComplete()}
           >
-            {currentIndex === attributes.length - 1 ? 'Finish Statements' : 'Next'}
+            Next
           </button>
         </div>
       </div>
